@@ -1,0 +1,54 @@
+service: sls-go
+
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-go-plugin
+
+useDotenv: true
+
+provider:
+  name: aws
+  stage: ${opt:stage, env:stage, 'dev'}
+  memorySize: 128
+  runtime: go1.x
+  architecture: x86_64
+  region: ${opt:region, 'eu-central-1'}
+  deploymentBucket: 
+    name: ${self:custom.DeploymentsBucket.name}
+  iam:
+    role:
+      statements:
+        - ${file(sls/iam/files-s3-bucket.sls.yml):FilesS3BucketPolicy}
+
+package:
+  individually: true
+  exclude:
+    - ./**
+  include:
+    - ./.bin/**
+
+resources:
+  Resources:
+    FilesS3Bucket: ${file(sls/resources/files-s3-bucket.sls.yml):FilesS3Bucket}
+
+custom:
+  go:
+    cmd: GOARCH=amd64 GOOS=linux go build -ldflags="-s -w"
+  AWSAccountId: ${env:AWS_ACCOUNT_ID}
+  FilesS3Bucket:
+    name: ${self:service}-${self:provider.stage}-${self:custom.AWSAccountId}-files-s3-bucket
+  DeploymentsBucket:
+    name: ${self:service}-${self:provider.stage}-${self:custom.AWSAccountId}-deployments
+
+functions:
+  s3ImportHandler:
+    handler: src/lambda/s3-file/main.go
+    events:
+      - s3:
+          bucket: ${self:custom.FilesS3Bucket.name}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+            - suffix: .csv
+          existing: true
+
