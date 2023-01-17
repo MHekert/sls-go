@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  test-localstack:
+    container_name: localstack
+    image: localstack/localstack:1.2.0
+    environment:
+      DEBUG: 1
+      INIT_SCRIPTS_PATH: /docker-entrypoint-initaws.d
+    volumes:
+      - $PWD/localstack:/docker-entrypoint-initaws.d
+    ports:
+      - 4566:4566
