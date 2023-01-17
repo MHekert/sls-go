@@ -42,7 +42,7 @@ custom:
 
 functions:
   s3ImportHandler:
-    handler: src/lambda/s3-file/main.go
+    handler: src/lambda/s3-import/main.go
     events:
       - s3:
           bucket: ${self:custom.FilesS3Bucket.name}
