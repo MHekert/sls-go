@@ -11,3 +11,8 @@ services:
       - $PWD/localstack:/docker-entrypoint-initaws.d
     ports:
       - 4566:4566
+    networks:
+      - sls
+
+networks:
+  sls:

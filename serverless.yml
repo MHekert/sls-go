@@ -8,7 +8,7 @@ useDotenv: true
 
 provider:
   name: aws
-  stage: ${opt:stage, env:stage, 'dev'}
+  stage: ${opt:stage, 'dev'}
   memorySize: 128
   runtime: go1.x
   architecture: x86_64
@@ -19,6 +19,8 @@ provider:
     role:
       statements:
         - ${file(sls/iam/files-s3-bucket.sls.yml):FilesS3BucketPolicy}
+  environment:
+    STAGE: ${self:provider.stage}
 
 package:
   individually: true
