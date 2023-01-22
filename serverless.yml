@@ -19,6 +19,7 @@ provider:
     role:
       statements:
         - ${file(sls/iam/files-s3-bucket.sls.yml):FilesS3BucketPolicy}
+        - ${file(sls/iam/data-dynamodb-table.sls.yml):DataDynamodbTablePolicy}
   environment:
     STAGE: ${self:provider.stage}
 
@@ -32,18 +33,25 @@ package:
 resources:
   Resources:
     FilesS3Bucket: ${file(sls/resources/files-s3-bucket.sls.yml):FilesS3Bucket}
+    DataDynamodbTable: ${file(sls/resources/data-dynamodb-table.sls.yml):DataDynamodbTable}
 
 custom:
+  prefix: ${self:service}-${self:provider.stage}
   go:
     cmd: GOARCH=amd64 GOOS=linux go build -ldflags="-s -w"
   AWSAccountId: ${env:AWS_ACCOUNT_ID}
   FilesS3Bucket:
-    name: ${self:service}-${self:provider.stage}-${self:custom.AWSAccountId}-files-s3-bucket
+    name: ${self:custom.prefix}-${self:custom.AWSAccountId}-files-s3-bucket
   DeploymentsBucket:
-    name: ${self:service}-${self:provider.stage}-${self:custom.AWSAccountId}-deployments
+    name: ${self:custom.prefix}-${self:custom.AWSAccountId}-deployments
+  DataDynamodbTable:
+    name: ${self:custom.prefix}-data-table
+    arn: !GetAtt DataDynamodbTable.Arn
 
 functions:
   s3ImportHandler:
+    environment:
+      DATA_DYNAMODB_TABLE: ${self:custom.DataDynamodbTable.name}
     handler: src/lambda/s3-import/main.go
     events:
       - s3:
@@ -53,4 +61,3 @@ functions:
             - prefix: uploads/
             - suffix: .csv
           existing: true
-

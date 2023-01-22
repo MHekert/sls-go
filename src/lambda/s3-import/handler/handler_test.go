@@ -31,11 +31,11 @@ func TestSomething(t *testing.T) {
 					SchemaVersion:   "1.0",
 					ConfigurationID: "testConfigRule",
 					Bucket: events.S3Bucket{
-						Name: "sls-go-local-files-s3-bucket",
+						Name: "sls-go-local-123456789-files-s3-bucket",
 						OwnerIdentity: events.S3UserIdentity{
 							PrincipalID: "EXAMPLE",
 						},
-						Arn: "arn:aws:s3:::sls-go-local-files-s3-bucket",
+						Arn: "arn:aws:s3:::sls-go-local-123456789-files-s3-bucket",
 					},
 					Object: events.S3Object{
 						Key:           "uploads/example.csv",

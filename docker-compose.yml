@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  test-localstack:
-    container_name: localstack
+  local-localstack:
+    container_name: local-localstack
     image: localstack/localstack:1.2.0
     environment:
       DEBUG: 1
