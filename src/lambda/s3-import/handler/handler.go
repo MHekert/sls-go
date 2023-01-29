@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -18,9 +19,11 @@ import (
 )
 
 type Item struct {
-	Id    string `dynamodbav:"id"`
-	Prop1 string `dynamodbav:"prop1"`
-	Prop2 int    `dynamodbav:"prop2"`
+	Id        string `dynamodbav:"id"`
+	FirstName string `dynamodbav:"firstName"`
+	LastName  string `dynamodbav:"lastName"`
+	Email     string `dynamodbav:"email"`
+	Value     int    `dynamodbav:"value"`
 }
 
 func AwsEndpointResolverFactory() aws.EndpointResolverWithOptionsFunc {
@@ -44,8 +47,6 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
-
-	// cfg.EndpointResolverWithOptions = AwsEndpointResolverFactory()
 
 	svc := s3.NewFromConfig(cfg, func(o *s3.Options) {
 		o.UsePathStyle = true
@@ -83,15 +84,17 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 				panic(err)
 			}
 
-			prop2, err := strconv.Atoi(row[2])
+			value, err := strconv.Atoi(row[4])
 			if err != nil {
 				panic(err)
 			}
 
 			item := Item{
-				Id:    row[0],
-				Prop1: row[1],
-				Prop2: prop2,
+				Id:        row[0],
+				FirstName: row[1],
+				LastName:  row[2],
+				Email:     strings.ToLower(row[3]),
+				Value:     value,
 			}
 
 			marshaledItem, err := attributevalue.MarshalMap(item)
