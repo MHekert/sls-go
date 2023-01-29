@@ -18,8 +18,10 @@ var tableName string
 var s3Client *s3.Client
 var dynamodbClient *dynamodb.Client
 
+const workersCount = 4
+
 func main() {
-	lambda.Start(handler.HandlerFactory(tableName, s3Client, dynamodbClient))
+	lambda.Start(handler.HandlerFactory(workersCount, tableName, s3Client, dynamodbClient))
 }
 
 func AwsEndpointResolverFactory() aws.EndpointResolverWithOptionsFunc {

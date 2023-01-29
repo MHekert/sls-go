@@ -8,7 +8,10 @@ sls-invoke-s3:
 	sls invoke local --function s3ImportHandler --stage local --path ./event-payloads/s3-event.json --docker --docker-arg="--network sls-go_sls"
 
 dynamo-scan:
-	aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name sls-go-local-data-table --region eu-central-1
+	aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name sls-go-local-data-table --region eu-central
+
+dynamo-count:
+	aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name sls-go-local-data-table --region eu-central-1 --select "COUNT"
 
 dynamo-delete-table:
 	aws --endpoint-url=http://localhost:4566 dynamodb delete-table --table-name sls-go-local-data-table --region eu-central-1

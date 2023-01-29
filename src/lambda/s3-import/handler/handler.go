@@ -31,10 +31,34 @@ func unmarshalEmail(data []byte, field *emailType) error {
 	return nil
 }
 
-func HandlerFactory(tableName string, s3Client *s3.Client, dynamodbClient *dynamodb.Client) func(context.Context, events.S3Event) {
+func persistItem(tableName string, dynamodbClient *dynamodb.Client, item *Item) {
+	marshaledItem, err := attributevalue.MarshalMap(item)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = dynamodbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
+		Item:      marshaledItem,
+		TableName: aws.String(tableName),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func HandlerFactory(workersCount int, tableName string, s3Client *s3.Client, dynamodbClient *dynamodb.Client) func(context.Context, events.S3Event) {
 	return func(ctx context.Context, s3Event events.S3Event) {
-		for _, record := range s3Event.Records {
-			s3data := record.S3
+		for recordIndex := range s3Event.Records {
+			importChannel := make(chan Item, workersCount)
+
+			for i := 0; i < workersCount; i++ {
+				go func(inputChan <-chan Item) {
+					for item := range inputChan {
+						persistItem(tableName, dynamodbClient, &item)
+					}
+				}(importChannel)
+			}
+
+			s3data := s3Event.Records[recordIndex].S3
 
 			fd, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
 				Bucket: aws.String(s3data.Bucket.Name),
@@ -62,18 +86,11 @@ func HandlerFactory(tableName string, s3Client *s3.Client, dynamodbClient *dynam
 					log.Fatal(err)
 				}
 
-				marshaledItem, err := attributevalue.MarshalMap(item)
-				if err != nil {
-					log.Fatal(err)
-				}
-				_, err = dynamodbClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
-					Item:      marshaledItem,
-					TableName: aws.String(tableName),
-				})
-				if err != nil {
-					log.Fatal(err)
-				}
+				importChannel <- item
 			}
+
+			close(importChannel)
 		}
+
 	}
 }
