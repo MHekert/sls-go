@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -53,7 +54,8 @@ func TestSomething(t *testing.T) {
 		},
 	}
 
-	Handler(Context{}, event)
+	fmt.Println(event)
+	// Handler(Context{}, event)
 
 	// assert equality
 	assert.Equal(t, 123, 123, "they should be equal")
