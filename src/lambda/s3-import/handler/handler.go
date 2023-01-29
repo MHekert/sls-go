@@ -7,8 +7,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -16,14 +14,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/jszwec/csvutil"
 )
 
 type Item struct {
-	Id        string `dynamodbav:"id"`
-	FirstName string `dynamodbav:"firstName"`
-	LastName  string `dynamodbav:"lastName"`
-	Email     string `dynamodbav:"email"`
-	Value     int    `dynamodbav:"value"`
+	Id        string `dynamodbav:"id" csv:"id"`
+	FirstName string `dynamodbav:"firstName" csv:"firstname"`
+	LastName  string `dynamodbav:"lastName" csv:"lastname"`
+	Email     string `dynamodbav:"email" csv:"email"`
+	Value     int    `dynamodbav:"value" csv:"value"`
 }
 
 func AwsEndpointResolverFactory() aws.EndpointResolverWithOptionsFunc {
@@ -67,34 +66,19 @@ func Handler(ctx context.Context, s3Event events.S3Event) {
 		defer fd.Body.Close()
 
 		csvReader := csv.NewReader(fd.Body)
-		_, err = csvReader.Read()
-		if err == io.EOF {
-			break
-		}
+		dec, err := csvutil.NewDecoder(csvReader)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 		for {
-			row, err := csvReader.Read()
+			var item Item
+			err := dec.Decode(&item)
 			if err == io.EOF {
 				break
 			}
 			if err != nil {
 				panic(err)
-			}
-
-			value, err := strconv.Atoi(row[4])
-			if err != nil {
-				panic(err)
-			}
-
-			item := Item{
-				Id:        row[0],
-				FirstName: row[1],
-				LastName:  row[2],
-				Email:     strings.ToLower(row[3]),
-				Value:     value,
 			}
 
 			marshaledItem, err := attributevalue.MarshalMap(item)
