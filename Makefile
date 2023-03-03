@@ -8,7 +8,7 @@ sls-invoke-s3:
 	sls invoke local --function s3ImportHandler --stage local --path ./event-payloads/s3-event.json --docker --docker-arg="--network host"
 
 offline:
-	sls offline start --noTimeout
+	sls offline start --noTimeout --stage local
 
 dynamo-scan:
 	aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name sls-go-local-data-table --region eu-central-1

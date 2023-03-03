@@ -28,9 +28,8 @@ func (res *HTTPErrorResponse) MarshalJson() (string, error) {
 
 func (res *HTTPErrorResponse) ToAwsRes() (events.APIGatewayProxyResponse, error) {
 	httpResStr, err := res.MarshalJson()
-
 	if err != nil {
-		log.Fatal("")
+		log.Fatal(err)
 	}
 
 	return events.APIGatewayProxyResponse{
