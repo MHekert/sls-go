@@ -1,14 +1,14 @@
 service: sls-go
 
 plugins:
-  - serverless-dotenv-plugin
   - serverless-go-plugin
+  - serverless-offline
 
 useDotenv: true
 
 provider:
   name: aws
-  stage: ${opt:stage, 'dev'}
+  stage: ${opt:stage, 'local'}
   memorySize: 128
   runtime: go1.x
   architecture: x86_64
@@ -61,3 +61,12 @@ functions:
             - prefix: uploads/
             - suffix: .csv
           existing: true
+
+  httpGetItemHandler:
+    environment:
+      DATA_DYNAMODB_TABLE: ${self:custom.DataDynamodbTable.name}
+    handler: src/lambda/http-get-item/main.go
+    events:
+      - httpApi:
+          method: GET
+          path: /items/{id}

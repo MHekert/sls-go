@@ -8,20 +8,16 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"sls-go/src/lambda/s3-import/handler"
+	"sls-go/src/lambda/http-get-item/handler"
 	"sls-go/src/shared"
 )
 
 var tableName string
-var s3Client *s3.Client
 var dynamodbClient *dynamodb.Client
 
-const workersCount = 4
-
 func main() {
-	lambda.Start(handler.HandlerFactory(workersCount, tableName, s3Client, dynamodbClient))
+	lambda.Start(handler.HandlerFactory(tableName, dynamodbClient))
 }
 
 func init() {
@@ -32,8 +28,5 @@ func init() {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
 
-	s3Client = s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.UsePathStyle = true
-	})
 	dynamodbClient = dynamodb.NewFromConfig(cfg)
 }
