@@ -16,18 +16,21 @@ import (
 )
 
 var tableName string
+var bucketName string
 var s3Client *s3.Client
 var dynamodbClient *dynamodb.Client
 var repo handler.BatchPersister
+var importRepo handler.GetItemsImporter
 
 const workersCount = 4
 
 func main() {
-	lambda.Start(handler.HandlerFactory(workersCount, s3Client, repo))
+	lambda.Start(handler.HandlerFactory(workersCount, importRepo, repo))
 
 }
 func init() {
 	tableName = os.Getenv("DATA_DYNAMODB_TABLE")
+	bucketName = os.Getenv("S3_IMPORT_BUCKET_NAME")
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEndpointResolverWithOptions(shared.AwsEndpointResolverFactory()))
 	if err != nil {
@@ -40,5 +43,6 @@ func init() {
 	dynamodbClient = dynamodb.NewFromConfig(cfg)
 
 	repo = items.NewItemsDynamoDBRepository(dynamodbClient, tableName)
+	importRepo = items.NewItemsImportS3CSVRepository(s3Client, bucketName)
 
 }

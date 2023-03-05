@@ -52,6 +52,7 @@ functions:
   s3ImportHandler:
     environment:
       DATA_DYNAMODB_TABLE: ${self:custom.DataDynamodbTable.name}
+      S3_IMPORT_BUCKET_NAME: ${self:custom.FilesS3Bucket.name}
     handler: src/lambda/s3-import/main.go
     events:
       - s3:
