@@ -11,13 +11,15 @@ import (
 
 	"sls-go/src/lambda/http-get-item/handler"
 	"sls-go/src/shared"
+	"sls-go/src/shared/items"
 )
 
 var tableName string
 var dynamodbClient *dynamodb.Client
+var repo handler.OneGetter
 
 func main() {
-	lambda.Start(handler.HandlerFactory(tableName, dynamodbClient))
+	lambda.Start(handler.HandlerFactory(repo))
 }
 
 func init() {
@@ -29,4 +31,6 @@ func init() {
 	}
 
 	dynamodbClient = dynamodb.NewFromConfig(cfg)
+
+	repo = items.NewItemsDynamoDBRepository(dynamodbClient, tableName)
 }
