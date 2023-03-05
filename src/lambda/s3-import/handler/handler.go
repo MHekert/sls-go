@@ -16,33 +16,35 @@ type GetItemsImporter interface {
 	GetImportItems(key string, importChannel chan<- items.Item) error
 }
 
+func importer(repo BatchPersister, wg *sync.WaitGroup, importChannel <-chan items.Item) {
+	itemsSlice := make([]*items.Item, 0, items.MaxBatchSize)
+
+	for item := range importChannel {
+		curItem := item // closure capture
+		itemsSlice = append(itemsSlice, &curItem)
+		if len(itemsSlice) == items.MaxBatchSize {
+			err := repo.PersistBatch(itemsSlice)
+			if err != nil {
+				panic(err)
+			}
+			itemsSlice = make([]*items.Item, 0, items.MaxBatchSize)
+		}
+	}
+
+	if len(itemsSlice) > 0 {
+		err := repo.PersistBatch(itemsSlice)
+		if err != nil {
+			panic(err)
+		}
+	}
+	wg.Done()
+}
+
 func startImportWorkers(repo BatchPersister, workersCount int, wg *sync.WaitGroup, importChannel <-chan items.Item) {
 	wg.Add(workersCount)
 
 	for i := 0; i < workersCount; i++ {
-		go func(*sync.WaitGroup, <-chan items.Item) {
-			itemsSlice := make([]*items.Item, 0, items.MaxBatchSize)
-
-			for item := range importChannel {
-				curItem := item // closure capture
-				itemsSlice = append(itemsSlice, &curItem)
-				if len(itemsSlice) == items.MaxBatchSize {
-					err := repo.PersistBatch(itemsSlice)
-					if err != nil {
-						panic(err)
-					}
-					itemsSlice = make([]*items.Item, 0, items.MaxBatchSize)
-				}
-			}
-
-			if len(itemsSlice) > 0 && len(itemsSlice) < items.MaxBatchSize {
-				err := repo.PersistBatch(itemsSlice)
-				if err != nil {
-					panic(err)
-				}
-			}
-			wg.Done()
-		}(wg, importChannel)
+		go importer(repo, wg, importChannel)
 	}
 }
 
