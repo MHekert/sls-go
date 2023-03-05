@@ -26,39 +26,43 @@ func unmarshalEmail(data []byte, field *items.EmailType) error {
 	return nil
 }
 
+func startImportWorkers(repo BatchPersister, workersCount int, wg *sync.WaitGroup, importChannel <-chan items.Item) {
+	wg.Add(workersCount)
+
+	for i := 0; i < workersCount; i++ {
+		go func(*sync.WaitGroup, <-chan items.Item) {
+			itemsSlice := make([]*items.Item, 0, batchSize)
+
+			for item := range importChannel {
+				curItem := item // closure capture
+				itemsSlice = append(itemsSlice, &curItem)
+				if len(itemsSlice) == batchSize {
+					err := repo.PersistBatch(itemsSlice)
+					if err != nil {
+						panic(err)
+					}
+					itemsSlice = make([]*items.Item, 0, batchSize)
+				}
+			}
+
+			if len(itemsSlice) > 0 && len(itemsSlice) < batchSize {
+				err := repo.PersistBatch(itemsSlice)
+				if err != nil {
+					panic(err)
+				}
+			}
+			wg.Done()
+		}(wg, importChannel)
+	}
+}
+
 func HandlerFactory(workersCount int, s3Client *s3.Client, repo BatchPersister) func(context.Context, events.S3Event) {
 	return func(ctx context.Context, s3Event events.S3Event) {
 		for recordIndex := range s3Event.Records {
 			importChannel := make(chan items.Item, workersCount*batchSize*2)
 
 			var wg sync.WaitGroup
-			wg.Add(workersCount)
-
-			for i := 0; i < workersCount; i++ {
-				go func(*sync.WaitGroup, <-chan items.Item) {
-					itemsSlice := make([]*items.Item, 0, batchSize)
-
-					for item := range importChannel {
-						curItem := item // closure capture
-						itemsSlice = append(itemsSlice, &curItem)
-						if len(itemsSlice) == batchSize {
-							err := repo.PersistBatch(itemsSlice)
-							if err != nil {
-								panic(err)
-							}
-							itemsSlice = make([]*items.Item, 0, batchSize)
-						}
-					}
-
-					if len(itemsSlice) > 0 && len(itemsSlice) < batchSize {
-						err := repo.PersistBatch(itemsSlice)
-						if err != nil {
-							panic(err)
-						}
-					}
-					wg.Done()
-				}(&wg, importChannel)
-			}
+			startImportWorkers(repo, workersCount, &wg, importChannel)
 
 			s3data := s3Event.Records[recordIndex].S3
 
