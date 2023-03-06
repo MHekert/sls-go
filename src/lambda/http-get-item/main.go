@@ -9,28 +9,28 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
-	"sls-go/src/lambda/http-get-item/handler"
-	"sls-go/src/shared"
-	"sls-go/src/shared/items"
+	service "sls-go/src/items/core/service"
+	driven "sls-go/src/items/driven"
+	driving "sls-go/src/items/driving"
+	"sls-go/src/shared/common"
 )
 
-var tableName string
-var dynamodbClient *dynamodb.Client
-var repo handler.OneGetter
+var useCase *service.GetItemUseCase
 
 func main() {
-	lambda.Start(handler.HandlerFactory(repo))
+	lambda.Start(driving.GetItemHttpLambdaHandlerFactory(useCase))
 }
 
 func init() {
-	tableName = os.Getenv("DATA_DYNAMODB_TABLE")
+	tableName := os.Getenv("DATA_DYNAMODB_TABLE")
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEndpointResolverWithOptions(shared.AwsEndpointResolverFactory()))
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEndpointResolverWithOptions(common.AwsEndpointResolverFactory()))
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
 
-	dynamodbClient = dynamodb.NewFromConfig(cfg)
+	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
-	repo = items.NewItemsDynamoDBRepository(dynamodbClient, tableName)
+	oneGetterAdapter := driven.NewItemsDynamoDBRepository(dynamodbClient, tableName)
+	useCase = service.NewGetItemUseCase(oneGetterAdapter)
 }

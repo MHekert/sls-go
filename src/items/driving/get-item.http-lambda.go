@@ -1,30 +1,26 @@
-package handler
+package items
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"os"
-	"sls-go/src/shared"
+	service "sls-go/src/items/core/service"
+	"sls-go/src/shared/common"
 	"sls-go/src/shared/exceptions"
-	"sls-go/src/shared/items"
 
 	"github.com/aws/aws-lambda-go/events"
 )
 
-type OneGetter interface {
-	GetOne(id string) (*items.Item, error)
-}
-
-func HandlerFactory(repo OneGetter) func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func GetItemHttpLambdaHandlerFactory(getItemUseCase *service.GetItemUseCase) func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return func(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 		id := event.PathParameters["id"]
 
-		item, err := repo.GetOne(id)
+		item, err := getItemUseCase.Do(id)
 		if err != nil {
 			switch {
 			case errors.Is(err, exceptions.ErrNotFound):
-				httpRes := shared.HTTPErrorResponse{
+				httpRes := common.HTTPErrorResponse{
 					StatusCode: 404,
 					Message:    "Not Found",
 				}
@@ -33,14 +29,14 @@ func HandlerFactory(repo OneGetter) func(context.Context, events.APIGatewayProxy
 
 			default:
 				fmt.Fprintln(os.Stderr, err)
-				return shared.InternalServerError.ToAwsRes()
+				return common.InternalServerError.ToAwsRes()
 			}
 		}
 
 		itemJson, err := item.MarshalJson()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			return shared.InternalServerError.ToAwsRes()
+			return common.InternalServerError.ToAwsRes()
 		}
 
 		return events.APIGatewayProxyResponse{

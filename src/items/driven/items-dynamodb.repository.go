@@ -3,6 +3,7 @@ package items
 import (
 	"context"
 	"log"
+	items "sls-go/src/items/core"
 	"sls-go/src/shared/exceptions"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -28,7 +29,7 @@ func NewItemsDynamoDBRepository(dynamodb *dynamodb.Client, tableName string) *It
 	}
 }
 
-func (repo *ItemsDynamoDBRepository) PersistBatch(items [](*Item)) error {
+func (repo *ItemsDynamoDBRepository) PersistBatch(items [](*items.Item)) error {
 	batchWriteInput := dynamodb.BatchWriteItemInput{}
 	batchWriteInput.RequestItems = make(map[string][]types.WriteRequest)
 	batchItems := make([]types.WriteRequest, 0, MaxBatchSize)
@@ -66,7 +67,7 @@ func (repo *ItemsDynamoDBRepository) marshalKey(key *itemKey) map[string]types.A
 	return marshaled
 }
 
-func (repo *ItemsDynamoDBRepository) GetOne(id string) (*Item, error) {
+func (repo *ItemsDynamoDBRepository) GetOne(id string) (*items.Item, error) {
 	key := repo.marshalKey(&itemKey{Id: id})
 
 	dynamoResp, err := repo.client.GetItem(context.TODO(), &dynamodb.GetItemInput{Key: key, TableName: &repo.tableName})
@@ -78,7 +79,7 @@ func (repo *ItemsDynamoDBRepository) GetOne(id string) (*Item, error) {
 		return nil, exceptions.ErrNotFound
 	}
 
-	var item Item
+	var item items.Item
 	err = attributevalue.UnmarshalMap(dynamoResp.Item, &item)
 	if err != nil {
 		return nil, err

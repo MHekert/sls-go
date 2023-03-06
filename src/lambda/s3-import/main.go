@@ -10,39 +10,36 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"sls-go/src/lambda/s3-import/handler"
-	"sls-go/src/shared"
-	"sls-go/src/shared/items"
+	service "sls-go/src/items/core/service"
+	driven "sls-go/src/items/driven"
+	driving "sls-go/src/items/driving"
+	"sls-go/src/shared/common"
 )
 
-var tableName string
-var bucketName string
-var s3Client *s3.Client
-var dynamodbClient *dynamodb.Client
-var repo handler.BatchPersister
-var importRepo handler.GetItemsImporter
+var useCase *service.ItemsImporterUseCase
 
 const workersCount = 4
 
 func main() {
-	lambda.Start(handler.HandlerFactory(workersCount, importRepo, repo))
+	lambda.Start(driving.HandlerFactory(workersCount, useCase))
 
 }
 func init() {
-	tableName = os.Getenv("DATA_DYNAMODB_TABLE")
-	bucketName = os.Getenv("S3_IMPORT_BUCKET_NAME")
+	tableName := os.Getenv("DATA_DYNAMODB_TABLE")
+	bucketName := os.Getenv("S3_IMPORT_BUCKET_NAME")
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEndpointResolverWithOptions(shared.AwsEndpointResolverFactory()))
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEndpointResolverWithOptions(common.AwsEndpointResolverFactory()))
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
 
-	s3Client = s3.NewFromConfig(cfg, func(o *s3.Options) {
+	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
 		o.UsePathStyle = true
 	})
-	dynamodbClient = dynamodb.NewFromConfig(cfg)
+	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
-	repo = items.NewItemsDynamoDBRepository(dynamodbClient, tableName)
-	importRepo = items.NewItemsImportS3CSVRepository(s3Client, bucketName)
+	persistAdapter := driven.NewItemsDynamoDBRepository(dynamodbClient, tableName)
+	importAdapter := driven.NewItemsImportS3CSVRepository(s3Client, bucketName)
 
+	useCase = service.NewItemsImporterUseCase(importAdapter, persistAdapter)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"io"
+	items "sls-go/src/items/core"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -23,13 +24,13 @@ func NewItemsImportS3CSVRepository(s3 *s3.Client, bucketName string) *ItemsImpor
 	}
 }
 
-func (repo *ItemsImportS3CSVRepository) unmarshalEmail(data []byte, field *EmailType) error {
+func (repo *ItemsImportS3CSVRepository) unmarshalEmail(data []byte, field *items.EmailType) error {
 	email := strings.ToLower(string(data))
-	*field = EmailType(email)
+	*field = items.EmailType(email)
 	return nil
 }
 
-func (repo *ItemsImportS3CSVRepository) GetImportItems(key string, importChannel chan<- Item) error {
+func (repo *ItemsImportS3CSVRepository) GetImportItemsChannel(key string, importChannel chan<- items.Item) error {
 	fd, err := repo.client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(repo.bucketName),
 		Key:    aws.String(key),
@@ -47,7 +48,7 @@ func (repo *ItemsImportS3CSVRepository) GetImportItems(key string, importChannel
 	dec.Register(repo.unmarshalEmail)
 
 	for {
-		var item Item
+		var item items.Item
 		err := dec.Decode(&item)
 		if err == io.EOF {
 			break
