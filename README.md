@@ -12,13 +12,19 @@
 
 - install serverless packages
 
-  ```shell
+  ```bash
   npm i
+  ```
+
+- install golang packages
+
+  ```bash
+  go mod download
   ```
 
 - copy example `.env` file
 
-  ```shell
+  ```bash
   cp .env.example .env
   ```
 
@@ -26,70 +32,94 @@
 
 - start localstack
 
-  ```shell
+  ```bash
   make docker-start
   ```
 
 - import file with seed data to local s3
 
-  ```shell
+  ```bash
   make s3-upload-csv
   ```
 
 - run import lambda
 
-  ```shell
+  ```bash
   make sls-invoke-s3
   ```
 
 - start http lambdas (serverless-offline)
 
-  ```shell
+  ```bash
   make offline
   ```
 
+## testing
+
+```bash
+# unit tests
+$ go test ./...
+
+# unit test with verbose output
+$ go test ./... -v
+```
+
 ## commands
+
+### mocks
+
+- install mockery
+
+  ```bash
+  make mockery-install
+  ```
+
+- generate mocks
+
+  ```bash
+  make mockery
+  ```
 
 ### deployment
 
-  ```shell
-  sls deploy --aws-profile priv --stage dev
-  ```
+```bash
+sls deploy --aws-profile priv --stage dev
+```
 
 ### local DynamoDB helper commands
 
 - getting item from dynamodb by id
 
-  ```shell
+  ```bash
   make dynamo-get id=12
   ```
 
 - scan
 
-  ```shell
+  ```bash
   make dynamo-scan
   ```
 
 - count
 
-  ```shell
+  ```bash
   make dynamo-count
   ```
 
 - delete table
 
-  ```shell
+  ```bash
   make dynamo-delete-table:
   ```
 
 - create table
 
-  ```shell
+  ```bash
   make dynamo-create-table:
   ```
 
 - clear table (delete and recreate)
 
-  ```shell
+  ```bash
   make dynamo-clear:
   ```

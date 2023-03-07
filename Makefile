@@ -27,3 +27,12 @@ dynamo-create-table:
 
 dynamo-clear:
 	make dynamo-delete-table && make dynamo-create-table
+
+mockery-install:
+	go install github.com/vektra/mockery/v2@v2.21.1
+
+mockery:
+	~/go/bin/mockery --all
+
+utest:
+	go test ./...
