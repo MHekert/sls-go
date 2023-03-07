@@ -1,8 +1,8 @@
-package items
+package driving
 
 import (
 	"context"
-	service "sls-go/src/items/core/service"
+	"sls-go/src/items/core/service"
 	"sync"
 
 	"github.com/aws/aws-lambda-go/events"

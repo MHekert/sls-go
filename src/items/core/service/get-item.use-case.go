@@ -1,8 +1,8 @@
-package items
+package service
 
 import (
-	items "sls-go/src/items/core"
-	ports "sls-go/src/items/core/ports"
+	"sls-go/src/items/core"
+	"sls-go/src/items/core/ports"
 )
 
 type GetItemUseCase struct {
@@ -15,6 +15,6 @@ func NewGetItemUseCase(repo ports.OneGetter) *GetItemUseCase {
 	}
 }
 
-func (useCase *GetItemUseCase) Do(id string) (*items.Item, error) {
+func (useCase *GetItemUseCase) Do(id string) (*core.Item, error) {
 	return useCase.repo.GetOne(id)
 }

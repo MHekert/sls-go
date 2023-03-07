@@ -1,11 +1,11 @@
-package items
+package driving
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"os"
-	service "sls-go/src/items/core/service"
+	"sls-go/src/items/core/service"
 	"sls-go/src/shared/common"
 	"sls-go/src/shared/exceptions"
 

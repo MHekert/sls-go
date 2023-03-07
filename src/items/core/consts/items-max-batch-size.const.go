@@ -1,3 +1,3 @@
-package items
+package consts
 
 const MaxBatchSize = 25

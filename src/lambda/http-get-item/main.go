@@ -9,9 +9,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
-	service "sls-go/src/items/core/service"
-	driven "sls-go/src/items/driven"
-	driving "sls-go/src/items/driving"
+	"sls-go/src/items/core/service"
+	"sls-go/src/items/driven"
+	"sls-go/src/items/driving"
 	"sls-go/src/shared/common"
 )
 

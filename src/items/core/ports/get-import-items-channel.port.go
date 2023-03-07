@@ -1,4 +1,4 @@
-package items
+package ports
 
 import items "sls-go/src/items/core"
 
