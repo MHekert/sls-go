@@ -16,7 +16,7 @@ func HandlerFactory(workersCount int, useCase *service.ItemsImporterUseCase) fun
 		for recordIndex := range s3Event.Records {
 			key := s3Event.Records[recordIndex].S3.Object.Key
 			go func(wg *sync.WaitGroup) {
-				useCase.Do(workersCount, key)
+				useCase.Do(workersCount, key, make(chan struct{}))
 				wg.Done()
 			}(&wg)
 		}

@@ -19,12 +19,26 @@ func NewItemsImporterUseCase(getImportItemsChannelAdapter ports.GetImportItemsCh
 	}
 }
 
-func (useCase *ItemsImporterUseCase) Do(workersCount int, importId string) {
-	var wg sync.WaitGroup
-	importChannel := make(chan core.Item, workersCount*consts.MaxBatchSize*2)
-	useCase.startImportWorkers(useCase.batchPersisterAdapter, workersCount, &wg, importChannel)
+func NewImportChannel(workersCount int) chan core.Item {
+	return make(chan core.Item, workersCount*consts.MaxBatchSize*2)
+}
 
-	err := useCase.getImportItemsChannelAdapter.GetImportItemsChannel(importId, importChannel)
+func (useCase *ItemsImporterUseCase) Do(workersCount int, importId string, abortChan <-chan struct{}) {
+	useCase.do(workersCount, importId, abortChan, nil)
+}
+
+// optionally takes `chan core.Item` as last parameter to facilitate unit test
+func (useCase *ItemsImporterUseCase) do(workersCount int, importId string, abortChan <-chan struct{}, importChannel chan core.Item) {
+	var wg sync.WaitGroup
+	var importChan chan core.Item
+	if importChannel == nil {
+		importChan = NewImportChannel(workersCount)
+	} else {
+		importChan = importChannel
+	}
+	useCase.startImportWorkers(useCase.batchPersisterAdapter, workersCount, &wg, importChan, abortChan)
+
+	err := useCase.getImportItemsChannelAdapter.GetImportItemsChannel(importId, importChan)
 	if err != nil {
 		panic(err)
 	}
@@ -32,18 +46,28 @@ func (useCase *ItemsImporterUseCase) Do(workersCount int, importId string) {
 	wg.Wait()
 }
 
-func (useCase *ItemsImporterUseCase) importer(wg *sync.WaitGroup, importChannel <-chan core.Item) {
+func (useCase *ItemsImporterUseCase) importer(wg *sync.WaitGroup, importChannel chan core.Item, abortChan <-chan struct{}) {
 	itemsSlice := make([]*core.Item, 0, consts.MaxBatchSize)
 
-	for item := range importChannel {
-		curItem := item // closure capture
-		itemsSlice = append(itemsSlice, &curItem)
-		if len(itemsSlice) == consts.MaxBatchSize {
-			err := useCase.batchPersisterAdapter.PersistBatch(itemsSlice)
-			if err != nil {
-				panic(err)
+loop:
+	for {
+		select {
+		case item, ok := <-importChannel:
+			if !ok {
+				break loop
 			}
-			itemsSlice = make([]*core.Item, 0, consts.MaxBatchSize)
+
+			itemsSlice = append(itemsSlice, &item)
+			if len(itemsSlice) == consts.MaxBatchSize {
+				err := useCase.batchPersisterAdapter.PersistBatch(itemsSlice)
+				if err != nil {
+					panic(err)
+				}
+				itemsSlice = make([]*core.Item, 0, consts.MaxBatchSize)
+			}
+		case <-abortChan:
+			close(importChannel)
+			break loop
 		}
 	}
 
@@ -56,10 +80,10 @@ func (useCase *ItemsImporterUseCase) importer(wg *sync.WaitGroup, importChannel 
 	wg.Done()
 }
 
-func (useCase *ItemsImporterUseCase) startImportWorkers(repo ports.BatchPersister, workersCount int, wg *sync.WaitGroup, importChannel <-chan core.Item) {
+func (useCase *ItemsImporterUseCase) startImportWorkers(repo ports.BatchPersister, workersCount int, wg *sync.WaitGroup, importChannel chan core.Item, abortChan <-chan struct{}) {
 	wg.Add(workersCount)
 
 	for i := 0; i < workersCount; i++ {
-		go useCase.importer(wg, importChannel)
+		go useCase.importer(wg, importChannel, abortChan)
 	}
 }
