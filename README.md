@@ -4,55 +4,38 @@
 
 ### prerequisites
 
-- go installed
-- npm installed
-- docker installed
+- Go installed
+- Node.JS installed
+- Docker installed
 
 ### initial setup
 
-- install serverless packages
+```bash
+# install serverless packages
+$ npm i
 
-  ```bash
-  npm i
-  ```
+# install golang packages
+$ go mod download
 
-- install golang packages
-
-  ```bash
-  go mod download
-  ```
-
-- copy example `.env` file
-
-  ```bash
-  cp .env.example .env
-  ```
+# copy example `.env` file
+$ cp .env.example .env
+```
 
 ## running locally
 
-- start localstack
+```bash
+# start localstack
+$ make docker-start
 
-  ```bash
-  make docker-start
-  ```
+# import file with seed data to local s3
+$ make s3-upload-csv
 
-- import file with seed data to local s3
+# run import lambda
+$ make sls-invoke-s3
 
-  ```bash
-  make s3-upload-csv
-  ```
-
-- run import lambda
-
-  ```bash
-  make sls-invoke-s3
-  ```
-
-- start http lambdas (serverless-offline)
-
-  ```bash
-  make offline
-  ```
+# start http lambdas (serverless-offline)
+$ make offline
+```
 
 ## testing
 
@@ -68,17 +51,13 @@ $ go test ./... -v
 
 ### mocks
 
-- install mockery
+```bash
+# install mockery
+$ make mockery-install
 
-  ```bash
-  make mockery-install
-  ```
-
-- generate mocks
-
-  ```bash
-  make mockery
-  ```
+# generate mocks
+$ make mockery
+```
 
 ### deployment
 
@@ -88,38 +67,22 @@ sls deploy --aws-profile priv --stage dev
 
 ### local DynamoDB helper commands
 
-- getting item from dynamodb by id
+```bash
+# getting item from dynamodb by id
+$ make dynamo-get id=12
 
-  ```bash
-  make dynamo-get id=12
-  ```
+# scan
+$ make dynamo-scan
 
-- scan
+# count
+$ make dynamo-count
 
-  ```bash
-  make dynamo-scan
-  ```
+# delete table
+$ make dynamo-delete-table:
 
-- count
+# create table
+$ make dynamo-create-table:
 
-  ```bash
-  make dynamo-count
-  ```
-
-- delete table
-
-  ```bash
-  make dynamo-delete-table:
-  ```
-
-- create table
-
-  ```bash
-  make dynamo-create-table:
-  ```
-
-- clear table (delete and recreate)
-
-  ```bash
-  make dynamo-clear:
-  ```
+# clear table (delete and recreate)
+$ make dynamo-clear
+```
