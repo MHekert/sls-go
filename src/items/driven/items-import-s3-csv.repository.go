@@ -30,8 +30,10 @@ func (repo *ItemsImportS3CSVRepository) unmarshalEmail(data []byte, field *items
 	return nil
 }
 
-func (repo *ItemsImportS3CSVRepository) GetImportItemsChannel(key string, importChannel chan<- items.Item) error {
-	fd, err := repo.client.GetObject(context.TODO(), &s3.GetObjectInput{
+func (repo *ItemsImportS3CSVRepository) GetImportItemsChannel(ctx context.Context, key string, importChannel chan<- items.Item) error {
+	defer close(importChannel)
+
+	fd, err := repo.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(repo.bucketName),
 		Key:    aws.String(key),
 	})
@@ -51,7 +53,7 @@ func (repo *ItemsImportS3CSVRepository) GetImportItemsChannel(key string, import
 		var item items.Item
 		err := dec.Decode(&item)
 		if err == io.EOF {
-			break
+			return nil
 		}
 		if err != nil {
 			return err
@@ -59,7 +61,4 @@ func (repo *ItemsImportS3CSVRepository) GetImportItemsChannel(key string, import
 
 		importChannel <- item
 	}
-
-	close(importChannel)
-	return nil
 }

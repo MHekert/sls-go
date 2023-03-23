@@ -3,6 +3,7 @@
 package mocks
 
 import (
+	context "context"
 	core "sls-go/src/items/core"
 
 	mock "github.com/stretchr/testify/mock"
@@ -13,13 +14,13 @@ type GetImportItemsChannel struct {
 	mock.Mock
 }
 
-// GetImportItemsChannel provides a mock function with given fields: key, importChannel
-func (_m *GetImportItemsChannel) GetImportItemsChannel(key string, importChannel chan<- core.Item) error {
-	ret := _m.Called(key, importChannel)
+// GetImportItemsChannel provides a mock function with given fields: ctx, key, importChannel
+func (_m *GetImportItemsChannel) GetImportItemsChannel(ctx context.Context, key string, importChannel chan<- core.Item) error {
+	ret := _m.Called(ctx, key, importChannel)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, chan<- core.Item) error); ok {
-		r0 = rf(key, importChannel)
+	if rf, ok := ret.Get(0).(func(context.Context, string, chan<- core.Item) error); ok {
+		r0 = rf(ctx, key, importChannel)
 	} else {
 		r0 = ret.Error(0)
 	}

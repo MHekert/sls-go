@@ -1,7 +1,10 @@
 package ports
 
-import items "sls-go/src/items/core"
+import (
+	"context"
+	items "sls-go/src/items/core"
+)
 
 type GetImportItemsChannel interface {
-	GetImportItemsChannel(key string, importChannel chan<- items.Item) error
+	GetImportItemsChannel(ctx context.Context, key string, importChannel chan<- items.Item) error
 }

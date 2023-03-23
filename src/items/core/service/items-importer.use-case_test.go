@@ -34,50 +34,9 @@ func (t *ItemsImporterSuite) SetupTest() {
 	t.useCase = NewItemsImporterUseCase(getImportItemsChannel, batchPersister)
 }
 
-func (t *ItemsImporterSuite) TestAbortBeforeAnyRead() {
-	importId := "dir/something.csv"
-	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
-	ctx, cancel := context.WithCancel(context.Background())
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func(wg *sync.WaitGroup) {
-		t.useCase.Do(ctx, 3, importId)
-		wg.Done()
-	}(&wg)
-
-	cancel()
-	wg.Wait()
-
-	t.getImportItemsChannelMock.AssertNumberOfCalls(t.T(), "GetImportItemsChannel", 1)
-	t.batchPersisterMock.AssertNotCalled(t.T(), "PersistBatch")
-}
-
-func (t *ItemsImporterSuite) TestAbortAfterSomeRead() {
-	importId := "dir/something.csv"
-	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
-	t.batchPersisterMock.On("PersistBatch", mock.AnythingOfType("[]*core.Item")).Return(nil)
-	ctx, cancel := context.WithCancel(context.Background())
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func(wg *sync.WaitGroup) {
-		t.useCase.do(ctx, 1, importId, t.importChannel)
-		wg.Done()
-	}(&wg)
-
-	for i := 0; i <= 50; i++ {
-		t.importChannel <- *itemFake
-	}
-	cancel()
-	wg.Wait()
-
-	t.getImportItemsChannelMock.AssertNumberOfCalls(t.T(), "GetImportItemsChannel", 1)
-}
-
 func (t *ItemsImporterSuite) TestFullBatchesImport() {
 	importId := "dir/something.csv"
-	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
+	t.getImportItemsChannelMock.On("GetImportItemsChannel", mock.AnythingOfType("*context.emptyCtx"), importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
 	t.batchPersisterMock.On("PersistBatch", mock.AnythingOfType("[]*core.Item")).Return(nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -99,7 +58,7 @@ func (t *ItemsImporterSuite) TestFullBatchesImport() {
 
 func (t *ItemsImporterSuite) TestPartialBatchImport() {
 	importId := "dir/something.csv"
-	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
+	t.getImportItemsChannelMock.On("GetImportItemsChannel", mock.AnythingOfType("*context.emptyCtx"), importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
 	t.batchPersisterMock.On("PersistBatch", mock.AnythingOfType("[]*core.Item")).Return(nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -119,7 +78,7 @@ func (t *ItemsImporterSuite) TestPartialBatchImport() {
 
 func (t *ItemsImporterSuite) TestMultipleWorkersImport() {
 	importId := "dir/something.csv"
-	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
+	t.getImportItemsChannelMock.On("GetImportItemsChannel", mock.AnythingOfType("*context.emptyCtx"), importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
 	t.batchPersisterMock.On("PersistBatch", mock.AnythingOfType("[]*core.Item")).Return(nil)
 	var wg sync.WaitGroup
 	wg.Add(1)

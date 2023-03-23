@@ -24,45 +24,41 @@ func NewImportChannel(workersCount int) chan core.Item {
 	return make(chan core.Item, workersCount*consts.MaxBatchSize*2)
 }
 
-func (useCase *ItemsImporterUseCase) Do(ctx context.Context, workersCount int, importId string) {
+func (useCase *ItemsImporterUseCase) Do(ctx context.Context, workersCount int, importId string) error {
 	importChan := NewImportChannel(workersCount)
-	useCase.do(ctx, workersCount, importId, importChan)
+	return useCase.do(ctx, workersCount, importId, importChan)
 }
 
-func (useCase *ItemsImporterUseCase) do(ctx context.Context, workersCount int, importId string, importChannel chan core.Item) {
+func (useCase *ItemsImporterUseCase) do(ctx context.Context, workersCount int, importId string, importChannel chan core.Item) error {
 	var wg sync.WaitGroup
-	useCase.startImportWorkers(ctx, useCase.batchPersisterAdapter, workersCount, &wg, importChannel)
+	useCase.startImportWorkers(workersCount, &wg, importChannel)
 
-	err := useCase.getImportItemsChannelAdapter.GetImportItemsChannel(importId, importChannel)
+	err := useCase.getImportItemsChannelAdapter.GetImportItemsChannel(ctx, importId, importChannel)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	wg.Wait()
+	return nil
 }
 
-func (useCase *ItemsImporterUseCase) importer(ctx context.Context, wg *sync.WaitGroup, importChannel chan core.Item) {
+func (useCase *ItemsImporterUseCase) importer(wg *sync.WaitGroup, importChannel chan core.Item) {
+	defer wg.Done()
 	itemsSlice := make([]*core.Item, 0, consts.MaxBatchSize)
 
-loop:
 	for {
-		select {
-		case item, ok := <-importChannel:
-			if !ok {
-				break loop
-			}
+		item, ok := <-importChannel
+		if !ok {
+			break
+		}
 
-			itemsSlice = append(itemsSlice, &item)
-			if len(itemsSlice) == consts.MaxBatchSize {
-				err := useCase.batchPersisterAdapter.PersistBatch(itemsSlice)
-				if err != nil {
-					panic(err)
-				}
-				itemsSlice = make([]*core.Item, 0, consts.MaxBatchSize)
+		itemsSlice = append(itemsSlice, &item)
+		if len(itemsSlice) == consts.MaxBatchSize {
+			err := useCase.batchPersisterAdapter.PersistBatch(itemsSlice)
+			if err != nil {
+				panic(err)
 			}
-		case <-ctx.Done():
-			wg.Done()
-			return
+			itemsSlice = make([]*core.Item, 0, consts.MaxBatchSize)
 		}
 	}
 
@@ -72,13 +68,12 @@ loop:
 			panic(err)
 		}
 	}
-	wg.Done()
 }
 
-func (useCase *ItemsImporterUseCase) startImportWorkers(ctx context.Context, repo ports.BatchPersister, workersCount int, wg *sync.WaitGroup, importChannel chan core.Item) {
+func (useCase *ItemsImporterUseCase) startImportWorkers(workersCount int, wg *sync.WaitGroup, importChannel chan core.Item) {
 	wg.Add(workersCount)
 
 	for i := 0; i < workersCount; i++ {
-		go useCase.importer(ctx, wg, importChannel)
+		go useCase.importer(wg, importChannel)
 	}
 }
