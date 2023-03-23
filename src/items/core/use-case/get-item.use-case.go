@@ -1,4 +1,4 @@
-package service
+package useCase
 
 import (
 	"sls-go/src/items/core"

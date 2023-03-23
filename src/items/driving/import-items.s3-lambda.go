@@ -2,13 +2,13 @@ package driving
 
 import (
 	"context"
-	"sls-go/src/items/core/service"
+	useCase "sls-go/src/items/core/use-case"
 	"sync"
 
 	"github.com/aws/aws-lambda-go/events"
 )
 
-func HandlerFactory(workersCount int, useCase *service.ItemsImporterUseCase) func(context.Context, events.S3Event) {
+func HandlerFactory(workersCount int, useCase *useCase.ItemsImporterUseCase) func(context.Context, events.S3Event) {
 	return func(ctx context.Context, s3Event events.S3Event) {
 		var wg sync.WaitGroup
 		wg.Add(len(s3Event.Records))

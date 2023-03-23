@@ -9,16 +9,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 
-	"sls-go/src/items/core/service"
+	useCase "sls-go/src/items/core/use-case"
 	"sls-go/src/items/driven"
 	"sls-go/src/items/driving"
 	"sls-go/src/shared/common"
 )
 
-var useCase *service.GetItemUseCase
+var useCaseHandler *useCase.GetItemUseCase
 
 func main() {
-	lambda.Start(driving.GetItemHttpLambdaHandlerFactory(useCase))
+	lambda.Start(driving.GetItemHttpLambdaHandlerFactory(useCaseHandler))
 }
 
 func init() {
@@ -32,5 +32,5 @@ func init() {
 	dynamodbClient := dynamodb.NewFromConfig(cfg)
 
 	oneGetterAdapter := driven.NewItemsDynamoDBRepository(dynamodbClient, tableName)
-	useCase = service.NewGetItemUseCase(oneGetterAdapter)
+	useCaseHandler = useCase.NewGetItemUseCase(oneGetterAdapter)
 }

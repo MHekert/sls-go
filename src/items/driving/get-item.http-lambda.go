@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sls-go/src/items/core/service"
+	useCase "sls-go/src/items/core/use-case"
 	"sls-go/src/shared/common"
 	"sls-go/src/shared/exceptions"
 
 	"github.com/aws/aws-lambda-go/events"
 )
 
-func GetItemHttpLambdaHandlerFactory(getItemUseCase *service.GetItemUseCase) func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func GetItemHttpLambdaHandlerFactory(getItemUseCase *useCase.GetItemUseCase) func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	return func(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 		id := event.PathParameters["id"]
 

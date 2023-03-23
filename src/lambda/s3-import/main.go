@@ -10,18 +10,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"sls-go/src/items/core/service"
+	useCase "sls-go/src/items/core/use-case"
 	"sls-go/src/items/driven"
 	"sls-go/src/items/driving"
 	"sls-go/src/shared/common"
 )
 
-var useCase *service.ItemsImporterUseCase
+var useCaseHandler *useCase.ItemsImporterUseCase
 
 const workersCount = 4
 
 func main() {
-	lambda.Start(driving.HandlerFactory(workersCount, useCase))
+	lambda.Start(driving.HandlerFactory(workersCount, useCaseHandler))
 
 }
 func init() {
@@ -41,5 +41,5 @@ func init() {
 	persistAdapter := driven.NewItemsDynamoDBRepository(dynamodbClient, tableName)
 	importAdapter := driven.NewItemsImportS3CSVRepository(s3Client, bucketName)
 
-	useCase = service.NewItemsImporterUseCase(importAdapter, persistAdapter)
+	useCaseHandler = useCase.NewItemsImporterUseCase(importAdapter, persistAdapter)
 }
