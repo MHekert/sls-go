@@ -30,7 +30,7 @@ func (repo *ItemsImportS3CSVRepository) unmarshalEmail(data []byte, field *items
 	return nil
 }
 
-func (repo *ItemsImportS3CSVRepository) GetImportItemsChannel(ctx context.Context, key string, importChannel chan<- items.Item) error {
+func (repo *ItemsImportS3CSVRepository) StreamItems(ctx context.Context, key string, importChannel chan<- items.Item) error {
 	defer close(importChannel)
 
 	fd, err := repo.client.GetObject(ctx, &s3.GetObjectInput{

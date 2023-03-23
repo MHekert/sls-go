@@ -9,14 +9,14 @@ import (
 )
 
 type ItemsImporterUseCase struct {
-	getImportItemsChannelAdapter ports.GetImportItemsChannel
-	batchPersisterAdapter        ports.BatchPersister
+	itemsStreamerAdapter  ports.ItemsStreamer
+	batchPersisterAdapter ports.BatchPersister
 }
 
-func NewItemsImporterUseCase(getImportItemsChannelAdapter ports.GetImportItemsChannel, batchPersisterAdapter ports.BatchPersister) *ItemsImporterUseCase {
+func NewItemsImporterUseCase(itemsStreamerAdapter ports.ItemsStreamer, batchPersisterAdapter ports.BatchPersister) *ItemsImporterUseCase {
 	return &ItemsImporterUseCase{
-		getImportItemsChannelAdapter: getImportItemsChannelAdapter,
-		batchPersisterAdapter:        batchPersisterAdapter,
+		itemsStreamerAdapter:  itemsStreamerAdapter,
+		batchPersisterAdapter: batchPersisterAdapter,
 	}
 }
 
@@ -33,7 +33,7 @@ func (useCase *ItemsImporterUseCase) do(ctx context.Context, workersCount int, i
 	var wg sync.WaitGroup
 	useCase.startImportWorkers(workersCount, &wg, importChannel)
 
-	err := useCase.getImportItemsChannelAdapter.GetImportItemsChannel(ctx, importId, importChannel)
+	err := useCase.itemsStreamerAdapter.StreamItems(ctx, importId, importChannel)
 	if err != nil {
 		return err
 	}
