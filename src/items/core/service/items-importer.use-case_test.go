@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"sls-go/mocks"
 	"sls-go/src/items/core"
 	"sls-go/src/items/core/consts"
@@ -36,16 +37,16 @@ func (t *ItemsImporterSuite) SetupTest() {
 func (t *ItemsImporterSuite) TestAbortBeforeAnyRead() {
 	importId := "dir/something.csv"
 	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
-	abortChan := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	go func(wg *sync.WaitGroup) {
-		t.useCase.Do(3, importId, abortChan)
+		t.useCase.Do(ctx, 3, importId)
 		wg.Done()
 	}(&wg)
 
-	abortChan <- struct{}{}
+	cancel()
 	wg.Wait()
 
 	t.getImportItemsChannelMock.AssertNumberOfCalls(t.T(), "GetImportItemsChannel", 1)
@@ -56,19 +57,19 @@ func (t *ItemsImporterSuite) TestAbortAfterSomeRead() {
 	importId := "dir/something.csv"
 	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
 	t.batchPersisterMock.On("PersistBatch", mock.AnythingOfType("[]*core.Item")).Return(nil)
-	abortChan := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	go func(wg *sync.WaitGroup) {
-		t.useCase.do(1, importId, abortChan, t.importChannel)
+		t.useCase.do(ctx, 1, importId, t.importChannel)
 		wg.Done()
 	}(&wg)
 
 	for i := 0; i <= 50; i++ {
 		t.importChannel <- *itemFake
 	}
-	abortChan <- struct{}{}
+	cancel()
 	wg.Wait()
 
 	t.getImportItemsChannelMock.AssertNumberOfCalls(t.T(), "GetImportItemsChannel", 1)
@@ -78,12 +79,11 @@ func (t *ItemsImporterSuite) TestFullBatchesImport() {
 	importId := "dir/something.csv"
 	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
 	t.batchPersisterMock.On("PersistBatch", mock.AnythingOfType("[]*core.Item")).Return(nil)
-	abortChan := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	go func(wg *sync.WaitGroup) {
-		t.useCase.do(1, importId, abortChan, t.importChannel)
+		t.useCase.do(context.TODO(), 1, importId, t.importChannel)
 		wg.Done()
 	}(&wg)
 
@@ -101,12 +101,11 @@ func (t *ItemsImporterSuite) TestPartialBatchImport() {
 	importId := "dir/something.csv"
 	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
 	t.batchPersisterMock.On("PersistBatch", mock.AnythingOfType("[]*core.Item")).Return(nil)
-	abortChan := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	go func(wg *sync.WaitGroup) {
-		t.useCase.do(1, importId, abortChan, t.importChannel)
+		t.useCase.do(context.TODO(), 1, importId, t.importChannel)
 		wg.Done()
 	}(&wg)
 
@@ -122,12 +121,11 @@ func (t *ItemsImporterSuite) TestMultipleWorkersImport() {
 	importId := "dir/something.csv"
 	t.getImportItemsChannelMock.On("GetImportItemsChannel", importId, mock.AnythingOfType("chan<- core.Item")).Return(nil)
 	t.batchPersisterMock.On("PersistBatch", mock.AnythingOfType("[]*core.Item")).Return(nil)
-	abortChan := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	go func(wg *sync.WaitGroup) {
-		t.useCase.do(2, importId, abortChan, t.importChannel)
+		t.useCase.do(context.TODO(), 2, importId, t.importChannel)
 		wg.Done()
 	}(&wg)
 

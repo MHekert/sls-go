@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"sls-go/src/items/core"
 	"sls-go/src/items/core/consts"
 	"sls-go/src/items/core/ports"
@@ -23,14 +24,14 @@ func NewImportChannel(workersCount int) chan core.Item {
 	return make(chan core.Item, workersCount*consts.MaxBatchSize*2)
 }
 
-func (useCase *ItemsImporterUseCase) Do(workersCount int, importId string, abortChan <-chan struct{}) {
+func (useCase *ItemsImporterUseCase) Do(ctx context.Context, workersCount int, importId string) {
 	importChan := NewImportChannel(workersCount)
-	useCase.do(workersCount, importId, abortChan, importChan)
+	useCase.do(ctx, workersCount, importId, importChan)
 }
 
-func (useCase *ItemsImporterUseCase) do(workersCount int, importId string, abortChan <-chan struct{}, importChannel chan core.Item) {
+func (useCase *ItemsImporterUseCase) do(ctx context.Context, workersCount int, importId string, importChannel chan core.Item) {
 	var wg sync.WaitGroup
-	useCase.startImportWorkers(useCase.batchPersisterAdapter, workersCount, &wg, importChannel, abortChan)
+	useCase.startImportWorkers(ctx, useCase.batchPersisterAdapter, workersCount, &wg, importChannel)
 
 	err := useCase.getImportItemsChannelAdapter.GetImportItemsChannel(importId, importChannel)
 	if err != nil {
@@ -40,7 +41,7 @@ func (useCase *ItemsImporterUseCase) do(workersCount int, importId string, abort
 	wg.Wait()
 }
 
-func (useCase *ItemsImporterUseCase) importer(wg *sync.WaitGroup, importChannel chan core.Item, abortChan <-chan struct{}) {
+func (useCase *ItemsImporterUseCase) importer(ctx context.Context, wg *sync.WaitGroup, importChannel chan core.Item) {
 	itemsSlice := make([]*core.Item, 0, consts.MaxBatchSize)
 
 loop:
@@ -59,9 +60,9 @@ loop:
 				}
 				itemsSlice = make([]*core.Item, 0, consts.MaxBatchSize)
 			}
-		case <-abortChan:
-			close(importChannel)
-			break loop
+		case <-ctx.Done():
+			wg.Done()
+			return
 		}
 	}
 
@@ -74,10 +75,10 @@ loop:
 	wg.Done()
 }
 
-func (useCase *ItemsImporterUseCase) startImportWorkers(repo ports.BatchPersister, workersCount int, wg *sync.WaitGroup, importChannel chan core.Item, abortChan <-chan struct{}) {
+func (useCase *ItemsImporterUseCase) startImportWorkers(ctx context.Context, repo ports.BatchPersister, workersCount int, wg *sync.WaitGroup, importChannel chan core.Item) {
 	wg.Add(workersCount)
 
 	for i := 0; i < workersCount; i++ {
-		go useCase.importer(wg, importChannel, abortChan)
+		go useCase.importer(ctx, wg, importChannel)
 	}
 }
