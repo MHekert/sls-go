@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"sls-go/mocks"
 	"sls-go/src/items/core"
 	"sls-go/src/items/core/consts"
@@ -42,14 +41,12 @@ func (t *ItemsImporterSuite) TestAbortBeforeAnyRead() {
 	wg.Add(1)
 
 	go func(wg *sync.WaitGroup) {
-		t.useCase.do(3, importId, abortChan, nil)
+		t.useCase.Do(3, importId, abortChan)
 		wg.Done()
 	}(&wg)
 
 	abortChan <- struct{}{}
 	wg.Wait()
-
-	fmt.Println("aborted all")
 
 	t.getImportItemsChannelMock.AssertNumberOfCalls(t.T(), "GetImportItemsChannel", 1)
 	t.batchPersisterMock.AssertNotCalled(t.T(), "PersistBatch")

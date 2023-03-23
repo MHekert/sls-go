@@ -24,21 +24,15 @@ func NewImportChannel(workersCount int) chan core.Item {
 }
 
 func (useCase *ItemsImporterUseCase) Do(workersCount int, importId string, abortChan <-chan struct{}) {
-	useCase.do(workersCount, importId, abortChan, nil)
+	importChan := NewImportChannel(workersCount)
+	useCase.do(workersCount, importId, abortChan, importChan)
 }
 
-// optionally takes `chan core.Item` as last parameter to facilitate unit test
 func (useCase *ItemsImporterUseCase) do(workersCount int, importId string, abortChan <-chan struct{}, importChannel chan core.Item) {
 	var wg sync.WaitGroup
-	var importChan chan core.Item
-	if importChannel == nil {
-		importChan = NewImportChannel(workersCount)
-	} else {
-		importChan = importChannel
-	}
-	useCase.startImportWorkers(useCase.batchPersisterAdapter, workersCount, &wg, importChan, abortChan)
+	useCase.startImportWorkers(useCase.batchPersisterAdapter, workersCount, &wg, importChannel, abortChan)
 
-	err := useCase.getImportItemsChannelAdapter.GetImportItemsChannel(importId, importChan)
+	err := useCase.getImportItemsChannelAdapter.GetImportItemsChannel(importId, importChannel)
 	if err != nil {
 		panic(err)
 	}
