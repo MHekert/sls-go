@@ -6,6 +6,7 @@ DataDynamodbTablePolicy:
     - dynamodb:UpdateItem
     - dynamodb:Query
     - dynamodb:DeleteItem
+    - dynamodb:BatchWriteItem
   Resource:
     - ${self:custom.DataDynamodbTable.arn}
     - !Join ["/", ["${self:custom.DataDynamodbTable.arn}", "index", "*"]]
