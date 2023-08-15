@@ -10,8 +10,8 @@ provider:
   name: aws
   stage: ${opt:stage, 'local'}
   memorySize: 128
-  runtime: go1.x
-  architecture: x86_64
+  runtime: provided.al2
+  architecture: arm64
   region: ${opt:region, 'eu-central-1'}
   deploymentBucket: 
     name: ${self:custom.DeploymentsBucket.name}
@@ -38,7 +38,9 @@ resources:
 custom:
   prefix: ${self:service}-${self:provider.stage}
   go:
-    cmd: GOARCH=amd64 GOOS=linux go build -ldflags="-s -w"
+    cmd: GOARCH=arm64 GOOS=linux go build -ldflags="-s -w"
+    supportedRuntimes: ["provided.al2"]
+    buildProvidedRuntimeAsBootstrap: true
   AWSAccountId: ${env:AWS_ACCOUNT_ID}
   FilesS3Bucket:
     name: ${self:custom.prefix}-${self:custom.AWSAccountId}-files-s3-bucket
