@@ -25,10 +25,9 @@ provider:
 
 package:
   individually: true
-  exclude:
-    - ./**
-  include:
-    - ./.bin/**
+  patterns:
+    - '!./**'
+    - './.bin/**'
 
 resources:
   Resources:
